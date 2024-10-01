@@ -1,101 +1,176 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Sparkles, Plane, Sun, Cloud, Umbrella } from 'lucide-react'
+import Dashboard from '@/components/dashboard'
+import Link from 'next/link'
+import axios from 'axios'
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY
+
+export default function HomePage() {
+    const [quote, setQuote] = useState("")
+    const [weather, setWeather] = useState({ temp: 0, condition: "sunny", city: "" })
+    const [weatherLoading, setWeatherLoading] = useState(true)
+    const [weatherError, setWeatherError] = useState<string | null>(null)
+    const [fact, setFact] = useState("")
+
+    const getUserLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    fetchWeather(position.coords.latitude, position.coords.longitude)
+                },
+                (error) => {
+                    console.error("Error getting user location:", error)
+                    fetchWeather() // Fallback to default location
+                },
+                { maximumAge: 60000, timeout: 5000 } // Cache the location for 1 minute
+            )
+        } else {
+            console.log("Geolocation is not supported by this browser.")
+            fetchWeather() // Fallback to default location
+        }
+    }
+
+    useEffect(() => {
+        fetchQuote()
+        getUserLocation()
+        fetchFact()
+    }, []) // Add this empty dependency array
+
+    const fetchQuote = async () => {
+        const quotes = [
+            "Adventure is worthwhile in itself. – Amelia Earhart",
+            "Travel makes one modest. You see what a tiny place you occupy in the world. – Gustave Flaubert",
+            "The world is a book and those who do not travel read only one page. – St. Augustine",
+        ]
+        setQuote(quotes[Math.floor(Math.random() * quotes.length)])
+    }
+
+    const fetchWeather = async (lat = 51.5074, lon = -0.1278) => {
+        setWeatherLoading(true)
+        setWeatherError(null)
+        console.log('API Key:', API_KEY) // Add this line
+        try {
+            const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`)
+            
+            console.log('Weather API response:', response.data)
+
+            setWeather({
+                temp: Math.round(response.data.main.temp),
+                condition: response.data.weather[0].main.toLowerCase(),
+                city: response.data.name
+            })
+        } catch (error) {
+            console.error("Error fetching weather data:", error)
+            if (axios.isAxiosError(error)) {
+                console.error("API Error response:", error.response?.data)
+                setWeatherError(error.response?.data?.message || "Failed to fetch weather data")
+            } else {
+                setWeatherError("An unexpected error occurred")
+            }
+        } finally {
+            setWeatherLoading(false)
+        }
+    }
+
+    const fetchFact = async () => {
+        const facts = [
+            "The world's longest flight is from Singapore to New York, lasting almost 19 hours.",
+            "The busiest airport in the world is Hartsfield-Jackson Atlanta International Airport.",
+            "The shortest commercial flight is between Westray and Papa Westray in Scotland's Orkney Islands, lasting just 2 minutes.",
+        ]
+        setFact(facts[Math.floor(Math.random() * facts.length)])
+    }
+
+    const dashboardContent = (
+        <>
+            <h1 className="text-3xl font-bold mb-6">Welcome to Your Travel Dashboard</h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Quick Links</CardTitle>
+                        <CardDescription>Access your most used features</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col gap-2">
+                            <Link href="/flight-dashboard" passHref>
+                                <Button variant="outline" className="w-full justify-start">
+                                    Search Flights
+                                </Button>
+                            </Link>
+                            <Link href="/bookings" passHref>
+                                <Button variant="outline" className="w-full justify-start">
+                                    View Bookings
+                                </Button>
+                            </Link>
+                            <Link href="/travel-tips" passHref>
+                                <Button variant="outline" className="w-full justify-start">
+                                    Travel Tips
+                                </Button>
+                            </Link>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5" />
+                            Inspirational Quote
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="italic">{quote}</p>
+                        <Button onClick={fetchQuote} className="mt-4">New Quote</Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Plane className="h-5 w-5" />
+                            Travel Fact
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>{fact}</p>
+                        <Button onClick={fetchFact} className="mt-4">New Fact</Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            {weather.condition === "sunny" && <Sun className="h-5 w-5" />}
+                            {weather.condition === "cloudy" && <Cloud className="h-5 w-5" />}
+                            {weather.condition === "rainy" && <Umbrella className="h-5 w-5" />}
+                            Weather at Your Location
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {weatherLoading ? (
+                            <p>Loading weather data...</p>
+                        ) : weatherError ? (
+                            <p className="text-red-500">{weatherError}</p>
+                        ) : (
+                            <>
+                                <p>Temperature: {weather.temp}°C</p>
+                                <p>Condition: {weather.condition}</p>
+                            </>
+                        )}
+                        <Button onClick={() => getUserLocation()} className="mt-4" disabled={weatherLoading}>
+                            Refresh Weather
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        </>
+    )
+
+    return <Dashboard>{dashboardContent}</Dashboard>
 }
