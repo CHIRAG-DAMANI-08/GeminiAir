@@ -39,7 +39,7 @@ export default function HomePage() {
         fetchQuote()
         getUserLocation()
         fetchFact()
-    }, []) // Add this empty dependency array
+    }, [fetchQuote, getUserLocation, fetchFact]) // Add this dependency array
 
     const fetchQuote = async () => {
         const quotes = [
