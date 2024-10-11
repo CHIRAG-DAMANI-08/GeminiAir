@@ -1,90 +1,70 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Lightbulb } from 'lucide-react'
+import Dashboard from '@/components/dashboard'
 
-export default function UserProfile() {
-    const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
-
-    const handlePreferenceChange = () => {
-        // Simulating AI-generated suggestions based on user preferences
-        setAiSuggestions([
-            "Based on your seat preference, we recommend booking flights GA101 and GA303 for your upcoming trips.",
-            "Your dietary requirements suggest you might enjoy our new in-flight menu on international routes.",
-            "Consider trying our XR meditation experience to help with jet lag on your long-haul flights."
-        ])
-    }
-
-    return (
-        <>
-            <h2 className="text-3xl font-bold tracking-tight mb-6">User Profile</h2>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Update your personal details and preferences</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="firstName">First Name</Label>
-                            <Input id="firstName" placeholder="John" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="lastName">Last Name</Label>
-                            <Input id="lastName" placeholder="Doe" />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="john.doe@example.com" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="seatPreference">Seat Preference</Label>
-                        <Select onValueChange={handlePreferenceChange}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select seat preference" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="window">Window</SelectItem>
-                                <SelectItem value="aisle">Aisle</SelectItem>
-                                <SelectItem value="middle">Middle</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="dietaryRequirements">Dietary Requirements</Label>
-                        <Textarea
-                            id="dietaryRequirements"
-                            placeholder="Enter any dietary requirements or allergies"
-                            onChange={handlePreferenceChange}
-                        />
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button>Save Changes</Button>
-                </CardFooter>
-            </Card>
-
-            {aiSuggestions.length > 0 && (
-                <Alert className="mt-6">
-                    <Lightbulb className="h-4 w-4" />
-                    <AlertTitle>AI-Powered Suggestions</AlertTitle>
-                    <AlertDescription>
-                        <ul className="list-disc pl-4">
-                            {aiSuggestions.map((suggestion, index) => (
-                                <li key={index}>{suggestion}</li>
-                            ))}
-                        </ul>
-                    </AlertDescription>
-                </Alert>
-            )}
-        </>
-    )
+export default function UserProfilePage() {
+  return (
+    <Dashboard>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">User Profile</h1>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center space-x-4">
+              <Avatar className="w-20 h-20">
+                <AvatarImage src="/placeholder-user.jpg" alt="User" />
+                <AvatarFallback>JD</AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle>John Doe</CardTitle>
+                <CardDescription>Premium Member</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" value="john.doe@example.com" readOnly />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" value="+1 (555) 123-4567" readOnly />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Input id="address" value="123 Main St, Anytown, USA" readOnly />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button>Edit Profile</Button>
+          </CardFooter>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Loyalty Program</CardTitle>
+            <CardDescription>Your current status and points</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-2xl font-bold">Gold Status</p>
+                <p className="text-sm text-muted-foreground">Valid until Dec 31, 2024</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">50,000</p>
+                <p className="text-sm text-muted-foreground">Points Balance</p>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline">View Benefits</Button>
+          </CardFooter>
+        </Card>
+      </div>
+    </Dashboard>
+  )
 }

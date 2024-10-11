@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Sparkles, Plane, Sun, Cloud, Umbrella } from 'lucide-react'
 import Dashboard from '@/components/dashboard'
 import Link from 'next/link'
+import TravelTipsModal from "@/components/TravelTipsModal";
 import axios from 'axios'
 
-const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY
+const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY;
 
 export default function HomePage() {
+    const [isTipsModalOpen, setIsTipsModalOpen] = useState(false);
     const [quote, setQuote] = useState("")
-    const [weather, setWeather] = useState({ temp: 0, condition: "sunny", city: "" })
+    const [currentWeather, setCurrentWeather] = useState<any>(null); // State for current weather
     const [weatherLoading, setWeatherLoading] = useState(true)
     const [weatherError, setWeatherError] = useState<string | null>(null)
     const [fact, setFact] = useState("")
@@ -21,25 +23,25 @@ export default function HomePage() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    fetchWeather(position.coords.latitude, position.coords.longitude)
+                    fetchCurrentWeather(position.coords.latitude, position.coords.longitude);
                 },
                 (error) => {
-                    console.error("Error getting user location:", error)
-                    fetchWeather() // Fallback to default location
+                    console.error("Error getting user location:", error);
+                    fetchCurrentWeather(); // Fallback to default location
                 },
                 { maximumAge: 60000, timeout: 5000 } // Cache the location for 1 minute
             )
         } else {
-            console.log("Geolocation is not supported by this browser.")
-            fetchWeather() // Fallback to default location
+            console.log("Geolocation is not supported by this browser.");
+            fetchCurrentWeather(); // Fallback to default location
         }
     }
 
     useEffect(() => {
-        fetchQuote()
-        getUserLocation()
-        fetchFact()
-    }, []) // Add this empty dependency array
+        fetchQuote();
+        getUserLocation();
+        fetchFact();
+    }, [])
 
     const fetchQuote = async () => {
         const quotes = [
@@ -47,33 +49,21 @@ export default function HomePage() {
             "Travel makes one modest. You see what a tiny place you occupy in the world. – Gustave Flaubert",
             "The world is a book and those who do not travel read only one page. – St. Augustine",
         ]
-        setQuote(quotes[Math.floor(Math.random() * quotes.length)])
+        setQuote(quotes[Math.floor(Math.random() * quotes.length)]);
     }
 
-    const fetchWeather = async (lat = 51.5074, lon = -0.1278) => {
-        setWeatherLoading(true)
-        setWeatherError(null)
-        console.log('API Key:', API_KEY) // Add this line
+    const fetchCurrentWeather = async (lat = 51.5074, lon = -0.1278) => {
+        setWeatherLoading(true);
+        setWeatherError(null);
         try {
-            const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`)
-            
-            console.log('Weather API response:', response.data)
-
-            setWeather({
-                temp: Math.round(response.data.main.temp),
-                condition: response.data.weather[0].main.toLowerCase(),
-                city: response.data.name
-            })
+            const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
+            console.log("Current Weather Data:", response.data);
+            setCurrentWeather(response.data);
         } catch (error) {
-            console.error("Error fetching weather data:", error)
-            if (axios.isAxiosError(error)) {
-                console.error("API Error response:", error.response?.data)
-                setWeatherError(error.response?.data?.message || "Failed to fetch weather data")
-            } else {
-                setWeatherError("An unexpected error occurred")
-            }
+            console.error("Error fetching current weather:", error);
+            setWeatherError("Failed to fetch current weather data");
         } finally {
-            setWeatherLoading(false)
+            setWeatherLoading(false);
         }
     }
 
@@ -83,7 +73,35 @@ export default function HomePage() {
             "The busiest airport in the world is Hartsfield-Jackson Atlanta International Airport.",
             "The shortest commercial flight is between Westray and Papa Westray in Scotland's Orkney Islands, lasting just 2 minutes.",
         ]
-        setFact(facts[Math.floor(Math.random() * facts.length)])
+        setFact(facts[Math.floor(Math.random() * facts.length)]);
+    }
+
+    const getWeatherEmoji = (code: number) => {
+        switch (code) {
+            case 200: // Thunderstorm
+            case 201:
+            case 202:
+                return '⛈️';
+            case 300: // Drizzle
+            case 301:
+            case 302:
+                return '🌧️';
+            case 500: // Rain
+            case 501:
+            case 502:
+                return '🌧️';
+            case 600: // Snow
+            case 601:
+            case 602:
+                return '❄️';
+            case 800: // Clear
+                return '☀️';
+            case 801: // Few clouds
+            case 802:
+                return '☁️';
+            default:
+                return '🌈'; // Default emoji
+        }
     }
 
     const dashboardContent = (
@@ -108,11 +126,9 @@ export default function HomePage() {
                                     View Bookings
                                 </Button>
                             </Link>
-                            <Link href="/travel-tips" passHref>
-                                <Button variant="outline" className="w-full justify-start">
-                                    Travel Tips
-                                </Button>
-                            </Link>
+                            <Button variant="outline" className="w-full justify-start" onClick={() => setIsTipsModalOpen(prev => !prev)}>
+                                Travel Tips
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -145,23 +161,26 @@ export default function HomePage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            {weather.condition === "sunny" && <Sun className="h-5 w-5" />}
-                            {weather.condition === "cloudy" && <Cloud className="h-5 w-5" />}
-                            {weather.condition === "rainy" && <Umbrella className="h-5 w-5" />}
-                            Weather at Your Location
-                        </CardTitle>
+                        <CardTitle>Current Weather</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {weatherLoading ? (
                             <p>Loading weather data...</p>
                         ) : weatherError ? (
                             <p className="text-red-500">{weatherError}</p>
+                        ) : currentWeather ? (
+                            <div className="flex items-center justify-between">
+                                <span>{currentWeather.name}</span>
+                                {currentWeather.weather && currentWeather.weather.length > 0 ? (
+                                    <span>
+                                        {getWeatherEmoji(currentWeather.weather[0].id)} {Math.round(currentWeather.main.temp)}°C
+                                    </span>
+                                ) : (
+                                    <span>No weather information available</span>
+                                )}
+                            </div>
                         ) : (
-                            <>
-                                <p>Temperature: {weather.temp}°C</p>
-                                <p>Condition: {weather.condition}</p>
-                            </>
+                            <p>No weather data available.</p>
                         )}
                         <Button onClick={() => getUserLocation()} className="mt-4" disabled={weatherLoading}>
                             Refresh Weather
@@ -169,6 +188,13 @@ export default function HomePage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Conditionally render the modal */}
+            {isTipsModalOpen && (
+                <TravelTipsModal isOpen={isTipsModalOpen} onClose={() => setIsTipsModalOpen(false)} />
+            )}
+
+            {/* TODO: Implement weekly weather fetching and display */}
         </>
     )
 

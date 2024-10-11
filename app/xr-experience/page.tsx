@@ -5,32 +5,38 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Glasses, Palmtree, Mountain, TreePine, Brain, Camera } from 'lucide-react'
-import { Canvas, useFrame, useLoader } from '@react-three/fiber'
-import { Environment, OrbitControls, useGLTF } from '@react-three/drei'
-import * as THREE from 'three'
+import { Canvas, useLoader } from '@react-three/fiber'
+import { Environment, OrbitControls } from '@react-three/drei'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import * as faceapi from 'face-api.js'
 
+// Define types for the scene
+interface Scene {
+    name: string;
+    icon: React.ForwardRefExoticComponent<any>;
+    environment: 'sunset' | 'dawn' | 'forest'; // Restrict to valid presets
+    model: string;
+}
+
 // 3D Model component
-function Model({ url }) {
-    const gltf = useLoader(GLTFLoader, url)
+function Model({ url }: { url: string }) {
+    const gltf = useLoader(GLTFLoader, url) as any; // Cast to any to avoid type issues
     return <primitive object={gltf.scene} scale={[0.01, 0.01, 0.01]} />
 }
 
 // Environment component
-function SceneEnvironment({ name }) {
+function SceneEnvironment({ name }: { name: 'sunset' | 'dawn' | 'forest' }) {
     return <Environment preset={name} background />
 }
 
 // Main XR Experience component
 export default function XRExperience() {
-    const [currentScene, setCurrentScene] = useState(null)
-    const [aiRecommendation, setAiRecommendation] = useState(null)
-    const [mood, setMood] = useState(null)
-    const videoRef = useRef()
-    const canvasRef = useRef()
+    const [currentScene, setCurrentScene] = useState<Scene | null>(null)
+    const [aiRecommendation, setAiRecommendation] = useState<string | null>(null)
+    const [mood, setMood] = useState<string | null>(null)
+    const videoRef = useRef<HTMLVideoElement | null>(null)
 
-    const scenes = [
+    const scenes: Scene[] = [
         { name: 'Beach', icon: Palmtree, environment: 'sunset', model: '/assets/3d/beach_chair.glb' },
         { name: 'Mountain', icon: Mountain, environment: 'dawn', model: '/assets/3d/mountain.glb' },
         { name: 'Forest', icon: TreePine, environment: 'forest', model: '/assets/3d/tree.glb' },
@@ -47,7 +53,9 @@ export default function XRExperience() {
     const startVideo = () => {
         navigator.mediaDevices.getUserMedia({ video: {} })
             .then((stream) => {
-                videoRef.current.srcObject = stream
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream
+                }
             })
             .catch((err) => console.error(err))
     }
@@ -61,7 +69,7 @@ export default function XRExperience() {
                 if (detections) {
                     const dominantMood = Object.keys(detections.expressions).reduce((a, b) =>
                         detections.expressions[a] > detections.expressions[b] ? a : b
-                    )
+                    ) as keyof typeof detections.expressions; // Cast to a valid key type
                     setMood(dominantMood)
                 }
             }
