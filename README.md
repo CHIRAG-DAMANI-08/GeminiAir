@@ -75,9 +75,11 @@ Welcome to GeminiAir, your ultimate travel companion application! This Next.js-b
    npm install
    ```
 
-3. Create a `.env.local` file in the root directory and add your OpenWeatherMap API key:
+3. Create a `.env.local` file in the root directory and add your OpenWeatherMap , Gemini and AviationStack API keys:
    ```bash
-   NEXT_PUBLIC_OPENWEATHERMAP_API_KEY=your_api_key_here
+   AVIATIONSTACK_API_KEY
+   GEMINI_API_KEY
+   NEXT_PUBLIC_OPENWEATHERMAP_API_KEY
    ```
 
 4. Run the development server:
